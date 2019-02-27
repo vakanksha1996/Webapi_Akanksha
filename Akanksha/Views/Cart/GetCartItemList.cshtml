@@ -51,7 +51,7 @@
                     $(this).siblings("span").text("Item is out of Stock.");
 
                     $(this).css("border", "2px solid red");
-                    
+
 
                 }
 
@@ -66,10 +66,10 @@
                     });
                 }
             })
-                
+
 
             $(".qty").change(function () {
-               
+
                 var stock = $(this).attr("data");
                 var quantity = parseInt($(this).val());
 
@@ -86,20 +86,20 @@
                     // alert("select atleast 1 quantity.");
                     $("form").submit(function(e){
                         e.preventDefault();
-                    });                                                      
-                   
+                    });
+
                 }
 
                 else if (quantity > stock)
                 {
-                               
+
                  $(this).siblings("span").text("Only " + stock + " quantities of item is available .");
                  $(this).css("border", "2px solid red");
 
                     $("form").submit(function(e){
                         e.preventDefault();
                     })
-                                       
+
                 }
 
                 else if (quantity >= 1 && quantity <= stock)
@@ -139,7 +139,7 @@
 
 
             })
-                    
+
     });
 </script>
 

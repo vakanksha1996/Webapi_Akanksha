@@ -21,9 +21,9 @@ namespace Akanksha.Api
         }
 
         [HttpGet]
-        public IHttpActionResult GetCarts(string userid)
+        public IHttpActionResult GetCarts(string usrid)
         {
-            var carts = db.Carts.Where(c => c.Id == userid).ToList();
+            var carts = db.Carts.Where(c => c.Id == usrid).ToList();
             return Ok(carts);
         }
 
@@ -58,7 +58,7 @@ namespace Akanksha.Api
 
             else
             {
-                return Ok(true);
+                return Ok(true); 
             }
                         
         }
@@ -94,6 +94,30 @@ namespace Akanksha.Api
             return Ok();
         }
 
+        [HttpPut]
+         public IHttpActionResult PutCart(Cart cart)
+        {
+            var cartInDb = db.Carts.SingleOrDefault(c => c.CartId == cart.CartId);
+            if(cart == null)
+            {
+                return BadRequest("Cart Item not Exist");
+            }
+
+            else
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest("Invalid Data");
+                }
+
+                else
+                {
+                    cartInDb.Quantity = cart.Quantity;
+                    db.SaveChanges();
+                    return Ok();
+                }
+            }
+        }
 
        [HttpGet]
         public IHttpActionResult UpdateQuantityOfCartItem(int cartid,int qty)

@@ -626,7 +626,8 @@ namespace Akanksha.Controllers
                 Order.CreatedDate = DateTime.Now;
                // Order.PaymentId = payment.PaymentId;
                 Order.Id = user.Id;
-                Order.Subtotal = Order.ItemQuantity * Product.Price;
+               // Order.Subtotal = Order.ItemQuantity * Product.Price;
+            Order.Subtotal = CalculateSubtotal(Order.ItemQuantity, Product.Price);
                 Order.ShippingAddress = address.HouseNo + "\n" + address.Colony_Street + "\n" +
                       address.City + "\n " + address.State.Name + "\n " + address.Pincode;
             
@@ -773,7 +774,9 @@ namespace Akanksha.Controllers
                 var result = response.Result;
             }
 
-            Product.NumberOfStock = Product.NumberOfStock - Order.ItemQuantity;
+            //  Product.NumberOfStock = Product.NumberOfStock - Order.ItemQuantity;
+
+               DecreaseNumberOfStock(Product, Order.ItemQuantity);
 
             //using (var client = new HttpClient())
             //{
@@ -940,6 +943,41 @@ namespace Akanksha.Controllers
             int pageSize = 6;
             int pageNumber = (page ?? 1);
             return View(products.ToPagedList(pageNumber, pageSize));
+
+        }
+
+        public decimal CalculateSubtotal(int quantity,decimal ProductPrice)
+        {
+
+            return quantity * ProductPrice;
+           
+        }
+
+        public void DecreaseNumberOfStock(Product product,int quantity)
+        {
+            Product producttobebuy = new Product()
+            {
+                ProductId = product.ProductId,
+                Price = product.Price,
+                Description = product.Description,
+                DiscountRate = product.DiscountRate,
+                Pic = product.Pic,
+                NumberOfStock = product.NumberOfStock,
+                SubcategoryId = product.SubcategoryId,
+                Name = product.Name
+
+            };
+
+            producttobebuy.NumberOfStock = producttobebuy.NumberOfStock - quantity;
+
+            using (var c = new HttpClient())
+            {
+                c.BaseAddress = new Uri("http://localhost:55437/api/");
+                var responsetask = c.PutAsJsonAsync("Productapi", producttobebuy);
+                responsetask.Wait();
+                var r = responsetask.Result;
+
+            }
 
         }
     }

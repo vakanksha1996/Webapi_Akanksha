@@ -17,28 +17,28 @@ namespace Akanksha.Controllers
 {
     public class CartController : Controller
     {
-        private AkankshaEntities db;
+      //  private AkankshaEntities db;
 
 
         public CartController()
         {
-            db = new AkankshaEntities();
+           // db = new AkankshaEntities();
         }
 
 
         // GET: Cart
         public ActionResult Index()
         {
-            
-            return View();
+          return View();
         }
 
 
 
         public ActionResult GetCartItemList()
         {
+            
             string Id = User.Identity.GetUserId();
-            //var cart_items = db.Carts.Where(c => c.Id == Id);
+      
             IEnumerable<Cart> cartitems;
             using(var client = new HttpClient())
             {
@@ -52,90 +52,69 @@ namespace Akanksha.Controllers
             }
 
             return View(cartitems);
+          
         }
 
 
 
-       [Authorize]
+        [Authorize]
         public JsonResult AddtoCart(int productid)
         {
 
             string id = User.Identity.GetUserId();
-
-            using(var client = new HttpClient())
+            IList<Cart> carts;
+            using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri("http://localhost:55437/api/");
-                var responsetask = client.GetAsync("Cartapi?userid=" + id + "&productid=" + productid);
-                responsetask.Wait();
-                var result = responsetask.Result;
-                var readtask = result.Content.ReadAsAsync<bool>();
-                readtask.Wait();
-                var isalreadyadded = readtask.Result;
-                if (isalreadyadded == true)
+                var response = client.GetAsync("Cartapi");
+                var result = response.Result;
+                var read = result.Content.ReadAsAsync<IList<Cart>>();
+                carts = read.Result;
+            }
+
+            carts = carts.Where(c => c.Id == id).ToList();
+
+            var isalreadyadded = IsItemAlreadyAdded(carts, productid);
+
+            if (isalreadyadded == true)
+            {
+                return Json(false, JsonRequestBehavior.AllowGet);
+            }
+            else
+            {
+                Cart cart = new Cart
                 {
-                    return Json(false, JsonRequestBehavior.AllowGet);
-                }
-                else
+                    Id = User.Identity.GetUserId(),
+                    ProductId = productid,
+                    Quantity = 1,
+                    //Amount = product.Price
+
+                };
+
+                using (var client = new HttpClient())
                 {
-                    Cart cart = new Cart
-                    {
-                        Id = User.Identity.GetUserId(),
-                        ProductId = productid,
-                        Quantity = 1,
-                        //Amount = product.Price
-
-                    };
-
-                    using(var c = new HttpClient())
-                    {
-                        c.BaseAddress = new Uri("http://localhost:55437/api/");
-                        var response = client.PostAsJsonAsync("Cartapi", cart);
-                        response.Wait();
-                        var r = response.Result;
-                       
-                    }
-
-                    return Json(true, JsonRequestBehavior.AllowGet);
+                    client.BaseAddress = new Uri("http://localhost:55437/api/");
+                    var response = client.PostAsJsonAsync("Cartapi", cart);
+                    response.Wait();
+                    var r = response.Result;
 
                 }
+
+                return Json(true, JsonRequestBehavior.AllowGet);
 
             }
 
-        //    string id = User.Identity.GetUserId();
-        //    var product = db.Products.Single(p => p.ProductId == productid);
-        //    var isalreadyadded =    db.Carts.Count(c => c.ProductId == product.ProductId && c.Id == id);
-        //    if (isalreadyadded == 0)
-        //    {
-        //        Cart c = new Cart
-        //        {
-        //            Id = User.Identity.GetUserId(),
-        //            ProductId = productid,
-        //            Quantity = 1,
-        //            Amount = product.Price
 
-        //        };
-        //        db.Carts.Add(c);
-        //        db.SaveChanges();
-        //        return Json(true, JsonRequestBehavior.AllowGet);
-        //    }
-        //    else
-        //    {
-        //        return Json(false, JsonRequestBehavior.AllowGet);
-        //    }
-           
 
-            
-           //// return RedirectToAction("GetProductsByName","Product", new { name = product.Subcategory.Name });
-        }
-
+         }
 
 
 
         public JsonResult RemovefromCart(int id)
-            
+
         {
 
-            using(var client = new HttpClient())
+            using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri("http://localhost:55437/api/");
                 var responsetask = client.DeleteAsync("Cartapi?cartid=" + id.ToString());
@@ -149,21 +128,11 @@ namespace Akanksha.Controllers
                 {
                     return Json(false, JsonRequestBehavior.AllowGet);
                 }
+
+
             }
-        //    var cart = db.Carts.SingleOrDefault(c => c.CartId == id);
-        //    if (cart != null)
-        //    {
-        //        db.Carts.Remove(cart);
-        //        db.SaveChanges();
-        //        string Id = User.Identity.GetUserId();
-        //        var cart_items = db.Carts.Where(c => c.Id == Id);
-        //        return Json(true, JsonRequestBehavior.AllowGet);
-        //    }
-        //    return Json(false, JsonRequestBehavior.AllowGet);
 
         }
-
-
 
 
 
@@ -181,22 +150,48 @@ namespace Akanksha.Controllers
                 cart = read.Result;
             }
 
+            cart.Quantity = qty;
+
+            Cart updatedcart = new Cart()
+            {
+                CartId = cart.CartId,
+                ProductId = cart.ProductId,
+                Id = cart.Id,
+                Quantity = cart.Quantity,
+                Amount = cart.Amount
+            };
            // cart.Quantity = qty;
-            using(var client = new HttpClient())
+            //using(var client = new HttpClient())
+            //{
+            //    client.BaseAddress = new Uri("http://localhost:55437/api/");
+            //    var responsetask = client.GetAsync("Cartapi?cartid=" + cart.CartId.ToString() + "&qty=" + qty.ToString());
+            //    responsetask.Wait();
+            //    var result = responsetask.Result;
+            //    var read = result.Content.ReadAsAsync<bool>();
+            //    read.Wait();
+            //    if (read.Result == true)
+            //    {
+            //        return Json(true, JsonRequestBehavior.AllowGet);
+            //    }
+            //    else
+            //    {
+            //        return Json(false, JsonRequestBehavior.AllowGet);
+            //    }
+            //}
+
+            using(var client =new HttpClient())
             {
                 client.BaseAddress = new Uri("http://localhost:55437/api/");
-                var responsetask = client.GetAsync("Cartapi?cartid=" + cart.CartId.ToString() + "&qty=" + qty.ToString());
-                responsetask.Wait();
-                var result = responsetask.Result;
-                var read = result.Content.ReadAsAsync<bool>();
-                read.Wait();
-                if (read.Result == true)
+                var response = client.PutAsJsonAsync("Cartapi", updatedcart);
+                response.Wait();
+                var result = response.Result;
+                if (result.IsSuccessStatusCode)
                 {
                     return Json(true, JsonRequestBehavior.AllowGet);
                 }
                 else
                 {
-                    return Json(false, JsonRequestBehavior.AllowGet);
+                   return  Json(false, JsonRequestBehavior.AllowGet);
                 }
             }
             //var cart = db.Carts.Single(c => c.CartId == cartid);
@@ -211,18 +206,11 @@ namespace Akanksha.Controllers
 
 
 
-
         public ActionResult CheckOut(Address address)
         {
             string id = User.Identity.GetUserId();
             CheckOutViewModel cvm;
-            //var cvm = new CheckOutViewModel
-            //{
-            //    Cartitems = db.Carts.Where(c => c.Id == id && c.Product.NumberOfStock!=0).ToList(),
-            //    States = db.States.ToList(),
-            //    PaymentModes = db.Payments.ToList(),
-            //    AddressBook = db.Addresses.Where(a=>a.Id == id).ToList()
-            //};
+           
 
             using(var client  =  new HttpClient())
             {
@@ -235,61 +223,44 @@ namespace Akanksha.Controllers
                 cvm = read.Result;
             }
 
-            if (address.AddressId != 0)
+
+            var addresstype = FindTypeOfAddress(address);
+
+
+            if (addresstype == "Address_From_Addressbook")
             {
-                if (address.City == null)
+                cvm.address = cvm.AddressBook.Single(a => a.AddressId == address.AddressId);
+            }
+
+
+            else if (addresstype == "Address_From_Addressbook_AfterEdit")
+            {
+                using (var client = new HttpClient())
                 {
-                    //  cvm.address = db.Addresses.Single(a => a.AddressId == address.AddressId);
-                    cvm.address = cvm.AddressBook.Single(a => a.AddressId == address.AddressId);
+                    client.BaseAddress = new Uri("http://localhost:55437/api/");
+                    var response = client.PutAsJsonAsync("Addressapi", address);
+                    response.Wait();
+                    var result = response.Result;
 
                 }
-                else
+
+                using (var client = new HttpClient())
                 {
 
-                    using(var client = new HttpClient())
-                    {
-                        client.BaseAddress = new Uri("http://localhost:55437/api/");
-                        var response = client.PutAsJsonAsync("Addressapi", address);
-                        response.Wait();
-                        var result = response.Result;
-
-                    }
-
-                    using (var client = new HttpClient())
-                    {
-
-                        client.BaseAddress = new Uri("http://localhost:55437/api/");
-                        var responsetask = client.GetAsync("Addressapi?addressid=" + address.AddressId);
-                        responsetask.Wait();
-                        var r = responsetask.Result;
-                        var read = r.Content.ReadAsAsync<Address>();
-                        read.Wait();
-                        cvm.address = read.Result;
-                    }
-                    // var addressindb = db.Addresses.Single(a => a.AddressId == address.AddressId);
-                    //var addressindb = cvm.AddressBook.Single(a => a.AddressId == address.AddressId);
-                    //addressindb.HouseNo = address.HouseNo;
-                    //addressindb.City = address.City;
-                    //addressindb.Colony_Street = address.Colony_Street;
-                    //addressindb.StateId = address.StateId;
-                    //addressindb.Pincode = address.Pincode;
-                    //db.SaveChanges();
-                    //cvm.address = addressindb;
+                    client.BaseAddress = new Uri("http://localhost:55437/api/");
+                    var responsetask = client.GetAsync("Addressapi?addressid=" + address.AddressId);
+                    responsetask.Wait();
+                    var r = responsetask.Result;
+                    var read = r.Content.ReadAsAsync<Address>();
+                    read.Wait();
+                    cvm.address = read.Result;
                 }
             }
 
-            if (address.City != null && address.AddressId==0)
+
+            else if (addresstype == "New Address")
             {
-                //address.Id = User.Identity.GetUserId();
-                //
-                //db.Addresses.Add(address);
-                //db.SaveChanges();
-                //cvm.address = address;
-
-
                 address.Id = id;
-
-
 
                 using (var client = new HttpClient())
                 {
@@ -310,15 +281,22 @@ namespace Akanksha.Controllers
                             var addresses = read.Result;
                             cvm.address = addresses.Last();
                         }
+
                     }
 
                     else
                     {
                         cvm.address = null;
                     }
-                }
 
+                }
             }
+
+            else
+
+                cvm.address = null;
+
+           
             return View(cvm);
         }
 
@@ -363,15 +341,11 @@ namespace Akanksha.Controllers
         {
             string id = User.Identity.GetUserId();
 
-          //  var address = db.Addresses.Single(a => a.AddressId == AddressId);
-            //var user = db.AspNetUsers.Single(a => a.Id == id);
-          //  var payment = db.Payments.Single(p => p.PaymentId == Order.PaymentId);
-           // var cartitems = db.Carts.Where(c => c.Id == id && c.Product.NumberOfStock!=0).ToList();
             Address address;
             AspNetUser user;
             List<Cart> cartitems;
             CheckOutViewModel cvm;
-            //  Payment payment;
+         
 
             using (var client = new HttpClient())
             {
@@ -383,6 +357,7 @@ namespace Akanksha.Controllers
                 read.Wait();
                 address = read.Result;
             }
+
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri("http://localhost:55437/api/");
@@ -393,35 +368,12 @@ namespace Akanksha.Controllers
                 read.Wait();
                 user = read.Result;
             }
-            //using (var client = new HttpClient())
-            //{
-            //    client.BaseAddress = new Uri("http://localhost:55437/api/");
-            //    var responsetask = client.GetAsync("Paymentapi?paymentid=" + Order.PaymentId);
-            //    responsetask.Wait();
-            //    var result = responsetask.Result;
-            //    var read = result.Content.ReadAsAsync<Payment>();
-            //    read.Wait();
-            //    payment = read.Result;
-            //}
-
-
+          
             Order.CreatedDate = DateTime.Now;
-            // Order.PaymentId = payment.PaymentId;
-            Order.Id = id;
             Order.ShippingAddress = address.HouseNo + "\n" + address.Colony_Street + "\n" +
                    address.City + "\n " + address.State.Name + "\n " + address.Pincode;
 
-            //var cm = new CheckOutViewModel
-            //{
-            //    Cartitems=cartitems,
-            //    address = address,
-            //    AddressBook = db.Addresses.ToList(),
-            //    States = db.States.ToList(),
-            //    PaymentModes = db.Payments.ToList(),
-            //    Order = Order
-
-            //};
-
+            
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri("http://localhost:55437/api/");
@@ -437,17 +389,13 @@ namespace Akanksha.Controllers
             cvm.address = address;
             cvm.Order = Order;
 
-
-
-
+       
                 if (!ModelState.IsValid)
                 {
                     return View("CheckOut", cvm);
                 }
 
-            //db.Orders.Add(Order);
-
-
+          
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri("http://localhost:55437/api/");
@@ -456,23 +404,10 @@ namespace Akanksha.Controllers
                 var result = response.Result;
 
             }
-            //  var existingcustomer = db.Customers.SingleOrDefault(c => c.Id == id);
-
-            Customer existingcustomer = null;
-            using (var client = new HttpClient())
-            {
-                client.BaseAddress = new Uri("http://localhost:55437/api/");
-                var response = client.GetAsync("Customerapi?id=" + user.Id);
-                response.Wait();
-                var result = response.Result;
-                if (result.IsSuccessStatusCode)
-                {
-                    var read = result.Content.ReadAsAsync<Customer>();
-                    read.Wait();
-                    existingcustomer = read.Result;
-                }
-            }
-            if (existingcustomer == null)
+           
+            var flag  = CheckIfNewCustomer(user.Id);
+           
+            if(flag == true)
             {
                 Customer customer = new Customer()
                 {
@@ -484,7 +419,7 @@ namespace Akanksha.Controllers
 
                 };
 
-                // db.Customers.Add(customer);
+              
 
                 using (var client = new HttpClient())
                 {
@@ -497,7 +432,7 @@ namespace Akanksha.Controllers
 
             }
 
-            // db.SaveChanges();
+           
 
             using (var client = new HttpClient())
             {
@@ -524,17 +459,11 @@ namespace Akanksha.Controllers
                     TotalPrice = item.Product.Price*item.Quantity,
                     
                 };
+
+                 
+                  var isproductavailable =  checkProductAvailability((int)item.ProductId,item.Quantity);
                
-                using(var client = new HttpClient())
-                {
-                    client.BaseAddress = new Uri("http://localhost:55437/api/");
-                    var response = client.GetAsync("Productapi?Id=" + item.ProductId);
-                    response.Wait();
-                    var result = response.Result;
-                    var read = result.Content.ReadAsAsync<Product>();
-                    read.Wait();
-                    var   producttobebuy = read.Result;
-                    if (producttobebuy.NumberOfStock < item.Quantity)
+                    if (isproductavailable == false)
                     {
                         Order.ItemQuantity = Order.ItemQuantity - item.Quantity;
                         Order.Subtotal = Order.Subtotal - item.Quantity * item.Product.Price;
@@ -548,23 +477,25 @@ namespace Akanksha.Controllers
                             var r = responsetask.Result;
 
                         }
-                        return Content(producttobebuy.Name + " is out of stock");
+                        return Content(item.Product.Name + " is out of stock");
                     }
                     else
                     {
-                        producttobebuy.NumberOfStock = producttobebuy.NumberOfStock - item.Quantity;
-                        using (var c = new HttpClient())
-                        {
-                            c.BaseAddress = new Uri("http://localhost:55437/api/");
-                            var responsetask = c.PostAsJsonAsync("orderapi/PostOrderDetails", orderdetail);
-                            responsetask.Wait();
-                            var r = responsetask.Result;
+                    using (var c = new HttpClient())
+                    {
+                        c.BaseAddress = new Uri("http://localhost:55437/api/");
+                        var responsetask = c.PostAsJsonAsync("orderapi/PostOrderDetails", orderdetail);
+                        responsetask.Wait();
+                        var r = responsetask.Result;
 
-                        }
                     }
+
+                    var productcontroller = new ProductController();
+
+                    productcontroller. DecreaseNumberOfStock(item.Product,item.Quantity);
+                   
                 }
-               
-              
+                                             
             }
 
             SendEmail(Order);                 
@@ -589,37 +520,10 @@ namespace Akanksha.Controllers
             mail.IsBodyHtml = true;
             client.Send(mail);
             Console.WriteLine("Sent");
-            //Email obj = new Email
-            //{
-            //    Body = "Hi " + order.AspNetUser.Email + ",</br></br>Thank you for Shopping.<br> Your Order Id:" + order.OrderId + ".</br> Order Date: " + order.CreatedDate,
-            //    From = "admin@BookMyTicket.com",
-            //    Subject = "Booking Confirmation mail",
-            //    To = b.Email
-            //};
-            //  Session["moviename"] = null;
-
-
-            //if (ModelState.IsValid)
-            //{
-            //    MailMessage mail = new MailMessage();
-            //    mail.To.Add(obj.To);
-            //    mail.From = new MailAddress(obj.From);
-            //    mail.Subject = obj.Subject;
-            //    string Body = obj.Body;
-            //    mail.Body = Body;
-            //    mail.IsBodyHtml = true;
-            //    SmtpClient smtp = new SmtpClient();
-            //    smtp.Host = "	smtp.mailtrap.io";
-            //    smtp.Port = 25;
-            //    smtp.UseDefaultCredentials = false;
-            //    smtp.Credentials = new System.Net.NetworkCredential("0d641e048c0b8d", "8a0f3c27bd6ab2"); // Enter seders User name and password  
-            //    smtp.EnableSsl = true;
-            //    smtp.Send(mail);
-            //    //  return View("Index", obj);
-            //}
+           
         }
 
-
+        [NonAction]
         public void Save()
         {
             using (var client = new HttpClient())
@@ -630,6 +534,100 @@ namespace Akanksha.Controllers
                 var result = response.Result;
             }
         }
+
+        [NonAction]
+        public bool IsItemAlreadyAdded(IList<Cart> CurrentUserCart,int productid)
+        {
+            
+            var count = CurrentUserCart.Count(c => c.ProductId == productid);
+
+            if (count == 0)
+                return false;
+
+            return true;
+            
+         }
+
+
+        [NonAction] 
+        public string FindTypeOfAddress(Address address)
+        {
+            if(address.AddressId != 0)
+            {
+                if(address.City == null)
+                {
+                    return "Address_From_Addressbook";
+                }
+
+                else
+                {
+                    return "Address_From_Addressbook_AfterEdit";
+                }
+            }
+
+            else
+            {
+                if(address.City != null)
+                {
+                    return "New Address";
+                }
+                else
+                {
+                    return "Yet_Not_Selected";
+                }
+            }
+        }
+
+        [NonAction]
+        public bool CheckIfNewCustomer(string userid)
+        {
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri("http://localhost:55437/api/");
+                var response = client.GetAsync("Customerapi?id=" + userid);
+                response.Wait();
+                var result = response.Result;
+                if (result.IsSuccessStatusCode)
+                {
+                    var read = result.Content.ReadAsAsync<Customer>();
+                    read.Wait();
+                    var existingcustomer = read.Result;
+                    if (existingcustomer == null)
+                        return true;
+                   
+                }
+            }
+
+            return false;
+        }
+
+
+        [NonAction]
+        public bool checkProductAvailability(int productid,int quantity)
+        {
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri("http://localhost:55437/api/");
+                var response = client.GetAsync("Productapi?Id=" +productid);
+                response.Wait();
+                var result = response.Result;
+                var read = result.Content.ReadAsAsync<Product>();
+                read.Wait();
+
+                var producttobebuy = read.Result;
+
+                if (producttobebuy.NumberOfStock > quantity)
+                    return true;
+
+                return false;
+
+
+            }
+
+            
+        }
+
+      
 
     }
 }

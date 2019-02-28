@@ -776,7 +776,7 @@ namespace Akanksha.Controllers
 
             //  Product.NumberOfStock = Product.NumberOfStock - Order.ItemQuantity;
 
-               DecreaseNumberOfStock(Product, Order.ItemQuantity);
+                DecreaseNumberOfStock(Product, Order.ItemQuantity);
 
             //using (var client = new HttpClient())
             //{

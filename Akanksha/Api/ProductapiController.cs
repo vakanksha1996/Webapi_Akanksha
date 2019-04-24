@@ -101,6 +101,30 @@ namespace Akanksha.Api
             return Ok(cvm);
         }
 
+        [HttpGet]
+        public IHttpActionResult GetlimitedProduct(int startlimit ,int endlimit)
+        {
+            int Srno = 0;
+            var columns = from t in db.Products
+                          orderby t.Name
+                          select new
+                          {
+                              Row_number = Srno +1,
+                              ProductId = t.ProductId,
+                              Name = t.Name,
+                              Description = t.Description,
+                              Pic= t.Pic,
+                              Price = t.Price,
+                              Discount = t.DiscountRate,
+                              subcategory =t.SubcategoryId,
+                              NumberOfstock = t.NumberOfStock
+
+                          };
+
+            var products = columns.Where(r => r.Row_number >= startlimit && r.Row_number <= endlimit).ToList();
+          return   Ok(products);
+        }
+
         [HttpPost]
         public IHttpActionResult PostProduct(Product product)
         {

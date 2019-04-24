@@ -46,10 +46,12 @@ namespace Akanksha.Controllers
 
             ViewBag.CurrentFilter = searchString;
 
-          using(var client = new HttpClient())
+            int pageSize = 6;
+            int pageNumber = (page ?? 1);
+            using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri("http://localhost:55437/api/");
-                var responseTask = client.GetAsync("Productapi?searchString="+ searchString);
+                var responseTask = client.GetAsync("Productapi?startlimit ="+(pageNumber-1)*pageSize+"endlimit="+pageNumber*pageSize);
                 responseTask.Wait();
 
                 var result = responseTask.Result;
@@ -76,8 +78,7 @@ namespace Akanksha.Controllers
                     break;
             }
 
-            int pageSize = 6;
-            int pageNumber = (page ?? 1);
+          
             return View(products.ToPagedList(pageNumber, pageSize));
         }
 
